@@ -3,8 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
-import java.util.ResourceBundle.Control;
-
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
@@ -19,10 +17,12 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -38,6 +38,7 @@ public class Robot extends TimedRobot {
 
   private AHRS navx;
   XboxController control1;
+  CommandXboxController control2;
   private PowerDistribution pdh;
   //Module Front Right
   public double kPFR, kIFR, kDFR, kIzFR, kFFFR, kMaxOutputFR, kMinOutputFR;
@@ -73,10 +74,13 @@ public class Robot extends TimedRobot {
   private CANSparkMax motorShooterR;
   private SparkPIDController pidControllerShooterR;
   public double kPShooter, kIShooter, kDShooter, kIzShooter, kFFShooter, kMaxOutputShooter, kMinOutputShooter;
-  private CANSparkMax motorShooteL;
+  private CANSparkMax motorShooterL;
   private SparkPIDController pidControllerShooterL;
   private DigitalInput limitL;
   private DigitalInput limitR;
+
+  //Autonomo
+  private Timer timer;
 
 
   /**
@@ -95,6 +99,7 @@ public class Robot extends TimedRobot {
 
     navx = new AHRS(SPI.Port.kMXP);
     control1 = new XboxController(0);
+    control2 = new CommandXboxController(1);
     pdh = new PowerDistribution(1, ModuleType.kRev);
 
     //MODULO FR
@@ -189,8 +194,9 @@ public class Robot extends TimedRobot {
     pidControllerFL.setOutputRange(kMinOutputFL, kMaxOutputFL);  
     
     //Inake
-    motorIntake = new CANSparkMax(0, MotorType.kBrushless);
-    motorIntake.setInverted(false);
+    motorIntake = new CANSparkMax(10, MotorType.kBrushless);
+    motorIntake.setInverted(true);
+    motorIntake.setIdleMode(IdleMode.kCoast);
 
     kPIntake = 0.1; 
     kIIntake = 0;
@@ -207,8 +213,12 @@ public class Robot extends TimedRobot {
     pidControllerIntake.setOutputRange(kMinOutputIntake, kMaxOutputIntake);  
 
     //Shooter
-    motorShooterR = new CANSparkMax(0, MotorType.kBrushless);
-    motorShooterR.setInverted(false);
+    motorShooterR = new CANSparkMax(21, MotorType.kBrushless);
+    motorShooterL = new CANSparkMax(9, MotorType.kBrushless);
+    motorShooterL.setIdleMode(IdleMode.kCoast);
+    motorShooterR.setIdleMode(IdleMode.kCoast);
+    motorShooterR.setInverted(true);
+    motorShooterL.setInverted(false);
 
     kPShooter = 0.1; 
     kIShooter = 0;
@@ -217,7 +227,7 @@ public class Robot extends TimedRobot {
     kMaxOutputShooter = 1; 
     kMinOutputShooter = -1;
     pidControllerShooterR = motorShooterR.getPIDController();
-    pidControllerShooterL = motorShooteL.getPIDController();
+    pidControllerShooterL = motorShooterL.getPIDController();
 
     pidControllerShooterL.setP(kPShooter);
     pidControllerShooterL.setI(kIShooter);
@@ -231,8 +241,12 @@ public class Robot extends TimedRobot {
     pidControllerShooterR.setIZone(kIzShooter);
     pidControllerShooterR.setOutputRange(kMinOutputShooter, kMaxOutputShooter); 
 
-    limitL = new DigitalInput(0);
-    limitR = new DigitalInput(1);
+    limitL = new DigitalInput(9);
+    limitR = new DigitalInput(8);
+
+    //Autonomo
+    timer = new Timer();
+    navx.reset();
 
   }
 
@@ -261,12 +275,26 @@ public class Robot extends TimedRobot {
     encoderFR.setPosition(0);
     encoderBR.setPosition(0);
     encoderBL.setPosition(0);
+    timer.reset();
+    timer.start();
   }
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-
+    if(timer.get() > 0.1 && timer.get() < 1.7){
+        motorShooterR.set(1);
+        motorShooterL.set(1);
+        motorIntake.set(1);
+     }else if(timer.get() > 1.7 && timer.get() < 2.1){
+        motorShooterR.set(0);
+        motorShooterL.set(0);
+        motorIntake.set(0);
+     }else if(timer.get() > 2.1 && timer.get() < 2.8){
+        Drive(0, 1, 0);
+     }else{
+        Drive(0, 0, 0);
+     }
   }
 
   /** This function is called once when teleop is enabled. */
@@ -276,24 +304,27 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    Drive();
+    Drive(control1.getLeftX(), control1.getLeftY(), control1.getRightX());
 
-    if(control1.getAButtonPressed() && !control1.getBButtonPressed() && !control1.getXButtonPressed() && !limitL.get() && !limitR.get()){
-      intake();
-    }
-
-    if(control1.getBButtonPressed() && !control1.getAButtonPressed() && !control1.getXButtonPressed()){
-      shooter();
-    }
-    if(control1.getXButtonPressed() && !control1.getBButtonPressed() && !control1.getAButtonPressed() ){
-      takeIn();
+    if(control2.a().getAsBoolean() 
+    && !control2.b().getAsBoolean() && !control2.x().getAsBoolean() && !limitL.get() && !limitR.get()){
+      motorIntake.set(1);
+    }else if(control2.b().getAsBoolean() && !control2.a().getAsBoolean() && !control2.x().getAsBoolean()){
+      motorShooterR.set(1);
+      motorShooterL.set(1);
+      motorIntake.set(1);
+    }else if(control2.x().getAsBoolean() && !control2.b().getAsBoolean() && !control2.a().getAsBoolean() ){
+      motorShooterR.set(-1);
+      motorShooterL.set(-1);
+      motorIntake.set(-1);
+    }else{
+      motorShooterR.set(0);
+      motorShooterL.set(0);
+      motorIntake.set(0);
     }
   }
-  private void Drive(){
+  private void Drive(double x1, double y1, double x2){
     int L = 1, W = 1;
-    double x1 = control1.getLeftX();
-    double y1 = control1.getLeftY();
-    double x2 = control1.getRightX();
     double r = Math.sqrt((L*L)+(W*W));
     y1 *= -1;
 
@@ -301,7 +332,7 @@ public class Robot extends TimedRobot {
         x1 = 0; y1 = 0; x2 = 0;
     }
 
-    double angleNaVX = Math.toRadians(navx.getAngle()+180);
+    double angleNaVX = Math.toRadians(navx.getAngle());
 
     double matrizR[][] = new double[2][2];
     double ejesR[][] = new double[1][2];
@@ -345,7 +376,7 @@ public class Robot extends TimedRobot {
         frontLeftSpeed = -frontLeftSpeed;
         frontLeftAngle = normalizeAngle(frontLeftAngle + 0.5);
     } 
-    double reduceSpeed = 0.2;
+    double reduceSpeed = 1;
 
     double ticksFR = 21.499897* frontRightAngle;
     pidControllerFR.setReference(ticksFR, ControlType.kPosition);
@@ -370,17 +401,25 @@ public class Robot extends TimedRobot {
     if (angle < -0.5) angle += 1.0;
     return angle;
 }
-private void shooter(){
-  pidControllerShooterR.setReference(-5108, ControlType.kVelocity);
-  pidControllerShooterL.setReference(5108, ControlType.kVelocity);
+private void shooter(double speedShooterR, double speedShooterL, double speedIntake){
+  // pidControllerShooterR.setReference(speedShooterR, ControlType.kVelocity);
+  // pidControllerShooterL.setReference(speedShooterL, ControlType.kVelocity);
+  // pidControllerIntake.setReference(speedIntake, ControlType.kVelocity);
+  motorShooterR.set(speedShooterR);
+  motorShooterL.set(speedShooterL);
+  motorIntake.set(speedIntake);
 }
 private void takeIn(){
-  pidControllerShooterR.setReference(5108, ControlType.kVelocity);
-  pidControllerShooterL.setReference(-5108, ControlType.kVelocity);
-  pidControllerIntake.setReference(5108, ControlType.kVelocity);
+  // pidControllerShooterR.setReference(5108, ControlType.kVelocity);
+  // pidControllerShooterL.setReference(-5108, ControlType.kVelocity);
+  // pidControllerIntake.setReference(5108, ControlType.kVelocity);
+  motorShooterR.set(-1);
+  motorShooterL.set(-1);
+  motorIntake.set(-1);
 }
 private void intake(){
-  pidControllerIntake.setReference(-5108, ControlType.kVelocity);
+  //pidControllerIntake.setReference(-5108, ControlType.kVelocity);
+   motorIntake.set(1);
 }
 
   /** This function is called once when the robot is disabled. */
