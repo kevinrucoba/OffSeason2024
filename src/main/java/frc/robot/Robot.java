@@ -258,7 +258,9 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+    SmartDashboard.putNumber("Angulo NavX", navx.getAngle());
+  }
 
   /**
    * This autonomous (along with the chooser code above) shows how to select between different
@@ -282,21 +284,25 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    if(timer.get() > 0.1 && timer.get() < 4.1){
+    if(timer.get() > 0.1 && timer.get() < 1.1){
+        motorShooterR.set(-1);
+        motorShooterL.set(-1);
+        motorIntake.set(-1);
+     }else if(timer.get() > 1.1 && timer.get() < 4.1){
         motorShooterR.set(1);
         motorShooterL.set(1);
         motorIntake.set(1);
      }else if(timer.get() > 4.1 && timer.get() < 4.5){
-        motorShooterR.set(0);
+      motorShooterR.set(0);
         motorShooterL.set(0);
         motorIntake.set(0);
-     }else if(timer.get() > 4.5 && timer.get() < 6.5){
+     }else if(timer.get() > 10  && timer.get() < 12.5){
         Drive(0, 1, 0);
      }else{
         Drive(0, 0, 0);
      }
   }
-
+//Parte derecha del Speaker, si se quiere poner a la izquierda +45
   /** This function is called once when teleop is enabled. */
   @Override
   public void teleopInit() {}
@@ -332,7 +338,7 @@ public class Robot extends TimedRobot {
         x1 = 0; y1 = 0; x2 = 0;
     }
 
-    double angleNaVX = Math.toRadians(navx.getAngle()+180);
+    double angleNaVX = Math.toRadians((navx.getAngle()+135)%360);
 
     double matrizR[][] = new double[2][2];
     double ejesR[][] = new double[1][2];
