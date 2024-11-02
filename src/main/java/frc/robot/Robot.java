@@ -282,15 +282,15 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    if(timer.get() > 0.1 && timer.get() < 1.7){
+    if(timer.get() > 0.1 && timer.get() < 4.1){
         motorShooterR.set(1);
         motorShooterL.set(1);
         motorIntake.set(1);
-     }else if(timer.get() > 1.7 && timer.get() < 2.1){
+     }else if(timer.get() > 4.1 && timer.get() < 4.5){
         motorShooterR.set(0);
         motorShooterL.set(0);
         motorIntake.set(0);
-     }else if(timer.get() > 2.1 && timer.get() < 2.8){
+     }else if(timer.get() > 4.5 && timer.get() < 6.5){
         Drive(0, 1, 0);
      }else{
         Drive(0, 0, 0);
@@ -307,7 +307,7 @@ public class Robot extends TimedRobot {
     Drive(control1.getLeftX(), control1.getLeftY(), control1.getRightX());
 
     if(control2.a().getAsBoolean() 
-    && !control2.b().getAsBoolean() && !control2.x().getAsBoolean() && !limitL.get() && !limitR.get()){
+    && !control2.b().getAsBoolean() && !control2.x().getAsBoolean() && limitL.get() && limitR.get()){
       motorIntake.set(1);
     }else if(control2.b().getAsBoolean() && !control2.a().getAsBoolean() && !control2.x().getAsBoolean()){
       motorShooterR.set(1);
@@ -332,7 +332,7 @@ public class Robot extends TimedRobot {
         x1 = 0; y1 = 0; x2 = 0;
     }
 
-    double angleNaVX = Math.toRadians(navx.getAngle());
+    double angleNaVX = Math.toRadians(navx.getAngle()+180);
 
     double matrizR[][] = new double[2][2];
     double ejesR[][] = new double[1][2];
@@ -376,7 +376,7 @@ public class Robot extends TimedRobot {
         frontLeftSpeed = -frontLeftSpeed;
         frontLeftAngle = normalizeAngle(frontLeftAngle + 0.5);
     } 
-    double reduceSpeed = 1;
+    double reduceSpeed = 0.5;
 
     double ticksFR = 21.499897* frontRightAngle;
     pidControllerFR.setReference(ticksFR, ControlType.kPosition);
