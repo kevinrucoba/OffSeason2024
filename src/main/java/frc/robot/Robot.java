@@ -89,16 +89,18 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    UsbCamera cam1 = CameraServer.startAutomaticCapture();
-    UsbCamera cam2 = CameraServer.startAutomaticCapture();
-    cam1.setResolution(10, 10);
-    cam2.setResolution(10, 10);
+    //UsbCamera cam1 = CameraServer.startAutomaticCapture();
+    //UsbCamera cam2 = CameraServer.startAutomaticCapture();
+    //cam1.setResolution(10, 10);
+    //cam2.setResolution(10, 10);
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
     navx = new AHRS(SPI.Port.kMXP);
+    //Chassis
     control1 = new XboxController(0);
+    //Mecanismo
     control2 = new CommandXboxController(1);
     pdh = new PowerDistribution(1, ModuleType.kRev);
 
@@ -259,7 +261,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putNumber("Angulo NavX", navx.getAngle());
+    
   }
 
   /**
@@ -310,6 +312,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    SmartDashboard.putNumber("Angulo NavX", navx.getAngle());
     Drive(control1.getLeftX(), control1.getLeftY(), control1.getRightX());
 
     if(control2.a().getAsBoolean() 
@@ -338,7 +341,7 @@ public class Robot extends TimedRobot {
         x1 = 0; y1 = 0; x2 = 0;
     }
 
-    double angleNaVX = Math.toRadians((navx.getAngle()+135)%360);
+    double angleNaVX = Math.toRadians((navx.getAngle()+180)%360);
 
     double matrizR[][] = new double[2][2];
     double ejesR[][] = new double[1][2];
